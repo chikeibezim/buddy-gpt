@@ -78,7 +78,7 @@ async function listEvents(auth) {
     singleEvents: true,
     orderBy: 'startTime',
   });
-  const events = res.data.items;
+  const events = res.data.items; 
   if (!events || events.length === 0) {
     console.log('No upcoming events found.');
     return;
