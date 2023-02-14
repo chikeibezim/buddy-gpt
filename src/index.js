@@ -4,9 +4,9 @@ dotenv.config();
 import * as readline from 'node:readline/promises';
 import { Configuration, OpenAIApi } from 'openai';
 import { stdin as input, stdout as output } from 'node:process';
-import express from 'express';
+import { google } from "googleapis";
 
-console.log(process.env.OPENAI_API_KEY)
+import { authorize } from './index2.js';
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY
@@ -14,16 +14,41 @@ const configuration = new Configuration({
 
 const openai = new OpenAIApi(configuration);
 
-function generatePrompt(answer){
-  const capitalizedAnimal = answer[0].toUpperCase() + answer.slice(1).toLowerCase();
-  return `Suggest three names for an animal that is a superhero.
+let schedules = "";
 
-  Animal: Cat
-  Names: Captain Sharpclaw, Agent Fluffball, The Incredible Feline
-  Animal: Dog
-  Names: Ruff the Protector, Wonder Canine, Sir Barks-a-Lot
-  Animal: ${capitalizedAnimal}
-  Names:`
+async function listEvents(auth) {
+  const calendar = google.calendar({version: 'v3', auth});
+  const res = await calendar.events.list({
+    calendarId: 'primary',
+    timeMin: new Date().toISOString(),
+    maxResults: 15,
+    singleEvents: true,
+    orderBy: 'startTime',
+  });
+  const events = res.data.items; 
+  if (!events || events.length === 0) {
+    console.log('No upcoming events found.');
+    return;
+  }
+
+  events.map((event, i) => {
+    const start = event.start.dateTime || event.start.date;
+    //saveAsCSV(start, event.summary, event.description);
+    schedules += `Event: ${event.summary}\nDate: ${start}\nDescription: ${event.description}\n`;
+    
+  });
+
+  return;
+
+}
+
+console.log({schedules});
+
+function generatePrompt(answer){
+  //const capitalizedAnimal = answer2[0].toUpperCase() + answer2.slice(1).toLowerCase();
+  return `${answer}.
+
+${schedules}`
 }
 
 async function check(){
@@ -34,15 +59,25 @@ async function check(){
 
     const rl = readline.createInterface({ input, output });
 
-    const answer = await rl.question('Enter an Animal? ');
+    const question = async () => {
+        let answer = await rl.question('> ');
+        return answer
+
+    }
 
     try{
+      let answer = await question();
+      console.log(answer)
+
       const completion = await openai.createCompletion({
         model: "text-davinci-003",
         prompt: generatePrompt(answer),
-        temperature: 0.6
+        temperature: 0.6,
+        max_tokens: 2500,
+        
       });
-      console.log({ result: completion.data.choices[0].text})
+      console.log(completion.data.choices[0].text);
+      //let answer2 = await question();
     }catch(err){
       if(err.response){
         console.error(err.response.status, err.response.data);
@@ -50,8 +85,21 @@ async function check(){
         console.error(`Error with OpenAI API request: ${err.message}`);
       }
     }
+
+    rl.on('line', async (input) => {
+
+      const completion = await openai.createCompletion({
+        model: "text-davinci-003",
+        prompt: generatePrompt(input),
+        temperature: 0.6,
+        
+      });
+      console.log(completion.data.choices[0].text);
+    });
 }
 
+
+await authorize().then(listEvents).catch(console.error);
 check();
 
 /*

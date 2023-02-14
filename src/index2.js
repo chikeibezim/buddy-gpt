@@ -1,9 +1,9 @@
-const fs = require('fs').promises;
-const { appendFileSync } = require('fs');
-const path = require('path');
-const process = require('process');
-const {authenticate} = require('@google-cloud/local-auth');
-const {google} = require('googleapis');
+import fs from "fs/promises";
+import { appendFileSync } from "fs";
+import path from "path";
+import process from "process";
+import { authenticate } from "@google-cloud/local-auth";
+import { google } from "googleapis";
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
@@ -70,28 +70,6 @@ async function authorize() {
  * Lists the next 10 events on the user's primary calendar.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
-async function listEvents(auth) {
-  const calendar = google.calendar({version: 'v3', auth});
-  const res = await calendar.events.list({
-    calendarId: 'primary',
-    timeMin: new Date().toISOString(),
-    maxResults: 15,
-    singleEvents: true,
-    orderBy: 'startTime',
-  });
-  const events = res.data.items; 
-  if (!events || events.length === 0) {
-    console.log('No upcoming events found.');
-    return;
-  }
-  console.log('Upcoming 10 events:');
-  saveAsCSV("Date","Event","Description");
-  events.map((event, i) => {
-    const start = event.start.dateTime || event.start.date;
-    saveAsCSV(start, event.summary, event.description);
-    
-  });
-}
 
 function saveAsCSV(date, event, description) {
   const csv = `${date},${event},${description}\n`;
@@ -102,4 +80,4 @@ function saveAsCSV(date, event, description) {
   }
 }
 
-authorize().then(listEvents).catch(console.error);
+export { authorize };
