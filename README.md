@@ -7,3 +7,9 @@ Here's how it looks:
 
 https://user-images.githubusercontent.com/36898129/219445975-63e305c0-3f8c-46a4-a445-34943333122e.mp4
 
+Feel free to clone and try it out.
+
+Run **npm install** when on the project directory after cloning
+
+
+
